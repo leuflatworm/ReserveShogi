@@ -1,0 +1,268 @@
+/* レイアウト: 左に盤(上下に駒台)、右に手番・指示・棋譜。狭い画面では縦に積む。 */
+:root {
+  --bg: #e6e9dd;
+  --ink: #1f251e;
+  --muted: #5b6456;
+  --panel: #f5f6ef;
+  --line: #c6ccbb;
+  --accent: #8a5a12;
+  --on-accent: #fffaf0;
+  --sente: #24508f;
+  --gote: #b5361f;
+  /* 盤と駒は実物の色なので、テーマが変わってもほぼ同じ */
+  --wood: #e3c282;
+  --wood-line: #7d5f2a;
+  --wood-from: rgba(255, 255, 255, 0.22);
+  --wood-to: rgba(255, 255, 255, 0.45);
+  --piece: #faedc8;
+  --piece-ink: #241c10;
+  --piece-edge: #4a3716;
+  --piece-promoted: #b8241a;
+  --arrow-sente: #1c4fb0;
+  --arrow-gote: #c12626;
+  --mark: rgba(36, 28, 16, 0.42);
+  --font-display: "Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  --font-body: "Zen Kaku Gothic New", "Yu Gothic UI", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --board: min(540px, calc(100vw - 56px), max(260px, calc(100vh - 230px)));
+  --cell: calc(var(--board) / 9);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151915;
+    --ink: #e4e8dd;
+    --muted: #98a191;
+    --panel: #1e231d;
+    --line: #343b31;
+    --accent: #e0a84a;
+    --on-accent: #1d1608;
+    --sente: #86abec;
+    --gote: #f08a73;
+    --wood: #c8a563;
+    --wood-line: #5a431c;
+    --piece: #f0e0b4;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151915;
+  --ink: #e4e8dd;
+  --muted: #98a191;
+  --panel: #1e231d;
+  --line: #343b31;
+  --accent: #e0a84a;
+  --on-accent: #1d1608;
+  --sente: #86abec;
+  --gote: #f08a73;
+  --wood: #c8a563;
+  --wood-line: #5a431c;
+  --piece: #f0e0b4;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.app { max-width: 1000px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 24px; }
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+}
+h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: 0.02em; }
+h1 small { font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 8px; letter-spacing: 0; }
+h2 { margin: 14px 0 4px; font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.controls label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+
+button, select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  min-height: 34px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary, button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+main { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.play { display: flex; flex-direction: column; gap: 6px; }
+.side { flex: 1 1 280px; min-width: 0; max-width: 420px; }
+
+/* 盤 */
+.board-frame {
+  display: grid;
+  grid-template-columns: var(--board) 1.4em;
+  grid-template-rows: 1.4em var(--board);
+}
+.files { display: grid; grid-template-columns: repeat(9, 1fr); text-align: center; font-size: 12px; color: var(--muted); }
+.ranks { grid-column: 2; grid-row: 2; display: grid; grid-template-rows: repeat(9, 1fr); align-items: center; text-align: center; font-size: 12px; color: var(--muted); }
+.board {
+  grid-column: 1;
+  grid-row: 2;
+  position: relative;
+  width: var(--board);
+  height: var(--board);
+  background: var(--wood);
+  border: 2px solid var(--wood-line);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.cells, .pieces, .marks, .arrows { position: absolute; inset: 0; }
+.pieces, .marks, .arrows { pointer-events: none; }
+.arrows { width: 100%; height: 100%; }
+.board.flipped .arrows { transform: rotate(180deg); }
+.cells { display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr); }
+.cell { border-right: 1px solid var(--wood-line); border-bottom: 1px solid var(--wood-line); }
+.cell:nth-child(9n) { border-right: 0; }
+.cell:nth-child(n + 73) { border-bottom: 0; }
+.cell.zone-edge { border-bottom-width: 2px; }
+.cell.moved-from { background: var(--wood-from); }
+.cell.moved-to { background: var(--wood-to); }
+
+/* 駒 */
+.piece {
+  position: absolute;
+  width: calc(100% / 9);
+  height: calc(100% / 9);
+  transition: left 0.32s ease, top 0.32s ease;
+  filter: drop-shadow(0 0 0.6px var(--piece-edge)) drop-shadow(0 1px 0.6px var(--piece-edge));
+}
+.piece .face {
+  position: absolute;
+  inset: 5%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 8%;
+  background: var(--piece);
+  color: var(--piece-ink);
+  clip-path: polygon(50% 2%, 84% 18%, 94% 98%, 6% 98%, 16% 18%);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: calc(var(--cell) * 0.5);
+  line-height: 1;
+}
+.piece.far .face { transform: rotate(180deg); }
+.piece.promoted .face { color: var(--piece-promoted); }
+.piece.selected { filter: drop-shadow(0 0 2px var(--arrow-sente)) drop-shadow(0 0 3px var(--arrow-sente)); z-index: 2; }
+.piece.gote.selected { filter: drop-shadow(0 0 2px var(--arrow-gote)) drop-shadow(0 0 3px var(--arrow-gote)); }
+.piece.promotable { animation: glow 1s ease-in-out infinite alternate; }
+.piece.mated { filter: drop-shadow(0 0 2px var(--piece-promoted)) drop-shadow(0 0 5px var(--piece-promoted)); z-index: 2; }
+.piece.mating { filter: drop-shadow(0 0 2px var(--piece-edge)) drop-shadow(0 0 4px var(--piece-edge)); z-index: 2; }
+@keyframes glow {
+  from { filter: drop-shadow(0 0 1px var(--piece-promoted)); }
+  to { filter: drop-shadow(0 0 4px var(--piece-promoted)) drop-shadow(0 0 2px var(--piece-promoted)); }
+}
+
+/* 指示の矢印 */
+.arrows .arrow { opacity: 0.8; }
+.arrows .sente { stroke: var(--arrow-sente); fill: var(--arrow-sente); }
+.arrows .gote { stroke: var(--arrow-gote); fill: var(--arrow-gote); }
+.arrows line { stroke-width: 0.075; stroke-linecap: round; }
+.arrows line.blocked { stroke-width: 0.04; stroke-dasharray: 0.1 0.12; opacity: 0.6; }
+.arrows polygon { stroke: none; }
+
+/* 指示先の候補 */
+.mark { position: absolute; width: calc(100% / 9); height: calc(100% / 9); }
+.mark::after {
+  content: "";
+  position: absolute;
+  inset: 36%;
+  border-radius: 50%;
+  background: var(--mark);
+}
+.mark.occupied::after { inset: 8%; background: none; border: 3px solid var(--mark); }
+.mark.ally::after { border-style: dashed; }
+.mark.current::after { background: var(--piece-promoted); }
+.mark.current.occupied::after { background: none; border-color: var(--piece-promoted); }
+
+/* 駒台 */
+.hand {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 44px;
+  width: var(--board);
+  padding: 4px 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.hand .who { font-size: 12px; font-weight: 700; margin-right: 4px; }
+.hand .who.sente { color: var(--sente); }
+.hand .who.gote { color: var(--gote); }
+.hand .none { font-size: 12px; color: var(--muted); }
+.hand button { padding: 2px 8px; font-family: var(--font-display); font-weight: 800; font-size: 16px; }
+.hand button .n { font-family: var(--font-body); font-size: 12px; font-weight: 400; margin-left: 3px; }
+.hand button.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+
+/* サイド */
+.status { font-size: 15px; font-weight: 700; }
+.status.sente { color: var(--sente); }
+.status.gote { color: var(--gote); }
+/* 考え中は末尾に点滅する印を出す */
+.status.thinking::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-left: 0.5em;
+  border-radius: 50%;
+  background: currentColor;
+  animation: think 0.9s ease-in-out infinite alternate;
+}
+@keyframes think {
+  from { opacity: 0.15; }
+  to { opacity: 1; }
+}
+.panel { margin-top: 8px; min-height: 104px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+.panel p { margin: 0 0 6px; }
+.panel .hint { color: var(--muted); font-size: 12px; }
+.panel .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.log {
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+  height: 220px;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.log li.auto { color: var(--muted); }
+.log li.sente { color: var(--sente); }
+.log li.gote { color: var(--gote); }
+.log li.result { font-weight: 700; }
+details { margin-top: 12px; font-size: 12px; color: var(--muted); }
+details ul { margin: 6px 0 0; padding-left: 1.4em; }
+summary { cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .piece { transition: none; }
+  .status.thinking::after { animation: none; }
+  .piece.promotable { animation: none; filter: drop-shadow(0 0 3px var(--piece-promoted)); }
+}

@@ -1,0 +1,4 @@
+# アーティファクト公開用のビルド出力(node build-artifact.js で再生成できる)
+dist/
+# Claude Code のローカル設定
+.claude/

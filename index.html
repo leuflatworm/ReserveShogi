@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReserveShogi</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>ReserveShogi <small>行動予約将棋</small></h1>
+    <div class="controls">
+      <label>対戦
+        <select id="mode">
+          <option value="cpu">自分が先手(CPUは後手)</option>
+          <option value="cpu-first">自分が後手(CPUは先手)</option>
+          <option value="pvp">2人で交互に操作</option>
+        </select>
+      </label>
+      <label id="levelLabel">CPUの強さ
+        <select id="level"></select>
+      </label>
+      <button id="newGame" type="button">新規対局</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="play">
+      <div class="hand" id="handTop"></div>
+      <div class="board-frame">
+        <div class="files" id="files"></div>
+        <div class="board" id="board">
+          <div class="cells" id="cells"></div>
+          <div class="pieces" id="pieces"></div>
+          <svg class="arrows" id="arrows" viewBox="0 0 9 9" aria-hidden="true"></svg>
+          <div class="marks" id="marks"></div>
+        </div>
+        <div class="ranks" id="ranks"></div>
+      </div>
+      <div class="hand" id="handBottom"></div>
+    </section>
+
+    <aside class="side">
+      <div class="status" id="status" aria-live="polite"></div>
+      <div class="panel" id="panel"></div>
+      <div class="actions">
+        <button id="pass" type="button">パス(指示なし)</button>
+        <button id="undo" type="button">待った</button>
+      </div>
+      <h2>棋譜</h2>
+      <ul class="log" id="log"></ul>
+      <details>
+        <summary>ルール</summary>
+        <ul>
+          <li>自分のターン開始時、指示を受けている自軍の駒が一斉に行動する。その後、指示を1つだけ出す。</li>
+          <li>指示は「駒 + 方向」。駒は毎ターンその方向へ進み続ける。飛・角・香は1回に進むマス数も決める。</li>
+          <li>進む先に敵駒がいれば取り、その回はそこで止まる(指示は継続)。</li>
+          <li>進む先に味方がいれば待機(指示は残る)。盤端に着いたら自動で停止。</li>
+          <li>味方同士は指示の古い順に解決する。</li>
+          <li>「停止」「打つ」も1指示。打った駒は静止している。</li>
+          <li>成りは指示を消費しない。敵陣に入る・敵陣内で動く・敵陣から出るターンに任意で成れ、成ると停止する。行き所のない駒は自動で成る。</li>
+          <li>相手の玉を取ったら勝ち。</li>
+          <li>どの指示を出しても次の相手の行動で玉を取られる局面は「詰み」で、その時点で負け。指示した動きは相手の行動より後に実行されるので、間に合う受けは走り駒の進路に打つ合駒だけ。合駒でしのげるなら続行する。</li>
+        </ul>
+      </details>
+    </aside>
+  </main>
+</div>
+<script src="engine.js" data-worker></script>
+<script src="ai.js" data-worker></script>
+<script src="ui.js"></script>
+</body>
+</html>
