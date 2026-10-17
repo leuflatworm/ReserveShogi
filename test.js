@@ -278,7 +278,8 @@ test('CPUはどの強さでも合法な指示を返す', () => {
       if (s.winner === null) E.declareMate(s);
       if (s.winner !== null) break;
       const legal = E.listInstructions(s).map((l) => JSON.stringify(l));
-      const ins = AI.choose(s, lv.opts);
+      // 持ち時間で読む段階は、テストを速くするため持ち時間を短くする
+      const ins = AI.choose(s, lv.opts.time ? Object.assign({}, lv.opts, { time: 50 }) : lv.opts);
       assert.ok(legal.includes(JSON.stringify(ins)), lv.name);
       E.applyInstruction(s, ins);
     }
